@@ -1,4 +1,6 @@
 import createMenu from "./AppMenu";
+//@ts-expect-error there is types, it just loves to ignore them
+import { BareMuxConnection } from "@mercuryworkshop/bare-mux";
 import { JSX, createEffect, createSignal } from "solid-js";
 import Tab from "~/api/Tab";
 import Velocity from "~/api/index";
@@ -8,6 +10,7 @@ import { engines, preferences } from "~/util/";
 import { getActiveTab } from "~/util/";
 import * as urlUtil from "~/util/url";
 
+const connection = new BareMuxConnection("/baremux/worker.js");
 export default function Utility(): JSX.Element {
   function reload() {
     if (getActiveTab()?.loading()) {
@@ -29,9 +32,17 @@ export default function Utility(): JSX.Element {
   }
 
   function urlBar(element: HTMLInputElement) {
-    element.addEventListener("keydown", (event) => {
+    element.addEventListener("keydown", async (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
+        const wispUrl =
+          (location.protocol === "https:" ? "wss://" : "ws://") +
+          location.host +
+          "/";
+        console.log("wisp url is ", wispUrl);
+        localStorage.setItem("transport", "epoxy");
+        console.log("Setting transport to Epoxy");
+        await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
         if (element.value) {
           getActiveTab()?.navigate(element.value);
           getActiveTab().search = false;
@@ -339,3 +350,4 @@ export default function Utility(): JSX.Element {
     </div>
   );
 }
+
